@@ -1,48 +1,39 @@
-// index.js
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-require('dotenv').config();
 
-const app = express();
-const PORT = 3000;
-
-app.use(cors()); // Enable CORS
-app.use(express.json()); // Parse JSON bodies
-
-// Route to get weather data
-app.get('/weather', async (req, res) => {
-    const city = req.query.city;
-    const apiKey = process.env.API_KEY;
-
-    if (!city) {
-        return res.status(400).json({ error: 'City name is required' });
-    }
-
+async function fetchWeather(city) {
     try {
-        const response = await axios.get(
-            `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
-        );
-
-        const data = response.data;
-
-        // Structure the data to be sent to the frontend
-        const weatherData = {
-            city: data.name,
-            date: new Date().toLocaleDateString(),
-            temperature: data.main.temp,
-            minTemp: data.main.temp_min,
-            maxTemp: data.main.temp_max,
-            description: data.weather[0].main,
-        };
-
-        res.json(weatherData);
+        const response = await fetch(`/weather?city=${city}`);
+        console.log(response);
+        if (!response.ok) throw new Error("City not found");
+        
+        const data = await response.json();
+        displayWeather(data);
     } catch (error) {
-        res.status(500).json({ error: 'Error fetching weather data' });
+        console.error("Error:", error);
+    }
+}
+
+function displayWeather(data) {
+    document.querySelector(".city").textContent = data.name;
+    document.querySelector(".degrees span").textContent = data.main.temp + "°C";
+    document.querySelector(".d-type").textContent = data.weather[0].main;
+    document.querySelector(".d-range").textContent = `Min: ${data.main.temp_min}°C / Max: ${data.main.temp_max}°C`;
+    document.querySelector(".l-date").textContent = new Date().toLocaleDateString();
+}
+
+document.querySelector(".input-search").addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        const city = event.target.value;
+        fetchWeather(city);
     }
 });
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+function clearResult() {
+    document.querySelector(".city").textContent = '';
+    document.querySelector(".degrees span").textContent = '';
+    document.querySelector(".d-type").textContent = '';
+    document.querySelector(".d-range").textContent = '';
+    document.querySelector(".l-date").textContent = '';
+    document.querySelector(".input-search").value = '';
+}
+
+        
